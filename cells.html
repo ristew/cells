@@ -7,6 +7,8 @@
 var canvas = document.getElementById("c");
 var context = canvas.getContext("2d");
 var cells = []
+var max_cells = 200;
+var max_size = 50;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -28,6 +30,7 @@ function find_cell(x, y) {
     });
 }
 
+// The basic lifeform in the simulation
 function Cell() {
     this.x = f(Math.random() * canvas.width);
     this.y = f(Math.random() * canvas.height);
@@ -63,30 +66,31 @@ function update_cells() {
 function fight(a, b) {
     if (a.color == b.color) return;
     var size_diff = a.size - b.size;
+    // larger cells are much more likely to win
     var fight_chance = l(3 * size_diff) - Math.random();
     if (fight_chance > 0) {
         fight_result(b, a);
     }
     else {
-        fight_result(a, b);   
+        fight_result(a, b);
     }
 }
 
 function fight_result(a, b) {
-    if (a.size < 50) a.size += 2;
-    remove (b);
-    try_reproduce(a);
-    // clone (a);
+    if (a.size < max_size) a.size += 2;
+    remove(b);
+    for (i = 0; i < a.size / 2; i++)
+        try_reproduce(a);
 }
 
 function try_reproduce(cell) {
-    if (repro_chance(cell) > Math.random() && cells.length < 200) {
+    if (repro_chance(cell) > Math.random() && cells.length < max_cells) {
         clone(cell);
-        if (cell.size < 50) cell.size += 1;
+        if (cell.size < max_size) cell.size += 1;
     }
 }
 
-function repro_chance (cell) {
+function repro_chance(cell) {
     var base = 0.005;
     base = base / (1 + 2 * cell.aggro);
     base = 60 * base / (cells.length + 1);
@@ -97,6 +101,7 @@ function clone(cell) {
     var new_cell = new Cell();
     new_cell.color = cell.color;
     new_cell.aggro = cell.aggro;
+    new_cell.size += f(cell.size / 8);
     cells.push(new_cell);
 }
 
@@ -108,6 +113,7 @@ function check_touch(a, b) {
     var a_center = center(a);
     var b_center = center(b);
     var dist = mag(a_center, b_center);
+    // not quite right, but who cares?
     if (dist < (a.size + b.size) / 1.5) {
         return true;
     }
@@ -139,7 +145,7 @@ function center(cell) {
 
 function loop() {
     update_cells();
-    setTimeout(loop, 50); 
+    setTimeout(loop, 50);
 }
 
 function sign(n) {
@@ -162,7 +168,7 @@ function move_cell(cell) {
     var y_dir = (Math.random() - 0.5) * 4;
     var xdiff = cell.x + x_dir + bias[0];
     var ydiff = cell.y + y_dir + bias[1];
-    
+
     cell.x = xdiff;
     cell.y = ydiff;
 
@@ -196,11 +202,13 @@ function rand_color() {
     return '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
 }
 
-for (i = 0; i < 60; i++) {
-    cells.push(new Cell());
+function init() {
+    for (i = 0; i < 60; i++) {
+        cells.push(new Cell());
+    }
+    loop();
 }
-
-loop();
+init();
 </script>
 </body>
 </html>
