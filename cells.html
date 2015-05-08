@@ -32,7 +32,7 @@ function Cell() {
     this.x = f(Math.random() * canvas.width);
     this.y = f(Math.random() * canvas.height);
     this.color = rand_color();
-    this.size = 10;
+    this.size = 4;
     this.aggro = Math.random() * 4;
 }
 
@@ -48,6 +48,7 @@ function update_cells() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     cells.forEach(function (c) {
         move_cell(c);
+        try_reproduce(c);
         cells.forEach(function (g) {
             if (c != g) {
                 if (check_touch(c, g) == true) {
@@ -64,17 +65,32 @@ function fight(a, b) {
     var size_diff = a.size - b.size;
     var fight_chance = l(3 * size_diff) - Math.random();
     if (fight_chance > 0) {
-        if (b.size < 50) b.size += 2;
-        remove(a);
-        clone(b);
-        
+        fight_result(b, a);
     }
     else {
-        if (a.size < 50) a.size += 2;
-        remove(b);
-        clone(a);
-        
+        fight_result(a, b);   
     }
+}
+
+function fight_result(a, b) {
+    if (a.size < 50) a.size += 2;
+    remove (b);
+    try_reproduce(a);
+    // clone (a);
+}
+
+function try_reproduce(cell) {
+    if (repro_chance(cell) > Math.random() && cells.length < 200) {
+        clone(cell);
+        if (cell.size < 50) cell.size += 1;
+    }
+}
+
+function repro_chance (cell) {
+    var base = 0.005;
+    base = base / (1 + 2 * cell.aggro);
+    base = 60 * base / (cells.length + 1);
+    return base;
 }
 
 function clone(cell) {
@@ -92,7 +108,7 @@ function check_touch(a, b) {
     var a_center = center(a);
     var b_center = center(b);
     var dist = mag(a_center, b_center);
-    if (dist < a.size || dist < b.size) {
+    if (dist < (a.size + b.size) / 1.5) {
         return true;
     }
     return false;
@@ -100,7 +116,7 @@ function check_touch(a, b) {
 
 function nearest_neighbour(cell) {
     var minCell;
-    var minMag = 600;
+    var minMag = cell.size * 40;
     cells.forEach(function (o) {
         if (cell.color != o.color){
             newM = mag([cell.x, cell.y], [o.x, o.y]);
@@ -138,9 +154,9 @@ function move_cell(cell) {
     if (near != undefined) {
         dist_x = near.x - cell.x;
         dist_y = near.y - cell.y;
-        size_diff = cell.size - near.size + 1;
-        bias[0] = sign(dist_x * size_diff) * cell.aggro;//0.5;
-        bias[1] = sign(dist_y * size_diff) * cell.aggro;//0.5;
+        size_diff = cell.size - near.size + cell.aggro;
+        bias[0] = sign(dist_x * size_diff) * (cell.aggro / 4 + 1);
+        bias[1] = sign(dist_y * size_diff) * (cell.aggro / 4 + 1);
     }
     var x_dir = (Math.random() - 0.5) * 4;
     var y_dir = (Math.random() - 0.5) * 4;
@@ -165,7 +181,7 @@ function move_cell(cell) {
 }
 
 function display_cell_info(cell) {
-    console.log("Cell " + cells.indexOf(cell) + ": size=" + cell.size + ", position=" + cell.x + ", " + cell.y + ", aggressiveness: " + cell.aggro);
+    alert("Cell " + cells.indexOf(cell) + ": size=" + cell.size + ", position=" + cell.x + ", " + cell.y + ", aggressiveness: " + cell.aggro);
 }
 
 function f(a) {
@@ -180,7 +196,7 @@ function rand_color() {
     return '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
 }
 
-for (i = 0; i < 40; i++) {
+for (i = 0; i < 60; i++) {
     cells.push(new Cell());
 }
 
